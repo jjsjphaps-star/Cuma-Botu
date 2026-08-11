@@ -30,7 +30,18 @@ app.listen(port, () => console.log(`Web sunucusu ${port} portunda devrede.`));
 
 const client = new Client({
     authStrategy: new LocalAuth(),
-    puppeteer: { args: ['--no-sandbox', '--disable-setuid-sandbox'] }
+    puppeteer: { 
+        args: [
+            '--no-sandbox', 
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage', // Sunucu belleğini rahatlatır
+            '--disable-accelerated-2d-canvas',
+            '--no-first-run',
+            '--no-zygote',
+            '--single-process',
+            '--disable-gpu'
+        ] 
+    }
 });
 
 client.on('qr', (qr) => {
@@ -39,28 +50,32 @@ client.on('qr', (qr) => {
     statusMessage = "QR Kod okutulmayı bekliyor...";
 });
 
-client.on('ready', async () => {
-    console.log('✅ WhatsApp bağlandı! Test mesajı gönderiliyor...');
+// YENİ EKLENEN KISIM: Eşleşmeyi anında yakalar ve bilgi verir
+client.on('authenticated', () => {
+    console.log('✅ Telefon eşleşti! Mesaj geçmişi senkronize ediliyor...');
     qrCodeUrl = ""; 
-    statusMessage = "✅ WhatsApp başarıyla bağlandı! Cuma botu aktif.";
+    statusMessage = "✅ Telefon eşleşti! WhatsApp geçmişi senkronize ediliyor. Bu işlem 2-3 dakika sürebilir, lütfen sayfayı ara ara yenileyerek bekleyin...";
+});
+
+client.on('ready', async () => {
+    console.log('✅ WhatsApp tamamen hazır! Test mesajı gönderiliyor...');
+    statusMessage = "✅ WhatsApp başarıyla bağlandı ve tamamen hazır! Cuma botu aktif.";
 
     const numaralar = [
-        "905551112233@c.us", // BURAYA KENDİ NUMARANI YAZ (Örn: 905321234567@c.us)
-        "905329998877@c.us"  // BURAYA DİĞER NUMARAYI YAZ
+        "905551112233@c.us", // KENDİ NUMARAN
+        "905329998877@c.us"  // ARKADAŞININ NUMARASI
     ];
 
-    // SİSTEM BAĞLANDIĞI AN GİDECEK DENEME MESAJI
     for (let numara of numaralar) {
         try {
             await client.sendMessage(numara, "🤖 Merhaba! Bu bir test mesajıdır. Bot şu an başarıyla kuruldu ve çalışıyor!");
             console.log(`✅ ${numara} numarasına test mesajı iletildi.`);
-            await new Promise(resolve => setTimeout(resolve, 5000)); // 5 saniye bekle
+            await new Promise(resolve => setTimeout(resolve, 5000));
         } catch (error) {
             console.error(`❌ Hata: ${numara}`, error);
         }
     }
 
-    // ASIL CUMA GÜNÜ ÇALIŞACAK ZAMANLAYICI (Türkiye Saati ile Cuma 10:00)
     cron.schedule('0 10 * * 5', async () => {
         console.log('Cuma mesajları gönderiliyor...');
         const cuma_mesaji = "Hayırlı Cumalar! Umarım harika bir gün geçirirsin. 🌹";
