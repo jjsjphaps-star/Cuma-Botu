@@ -77,7 +77,7 @@ async function connectToWhatsApp() {
             }
 
             // HER CUMA SAAT 10:00'DA GİDECEK MESAJ
-            cron.schedule('0 10 * * 5', async () => {
+            cron.schedule('30 21 * * *', async () => {
                 console.log('Cuma mesajları gönderiliyor...');
                 for (let numara of numaralar) {
                     try {
